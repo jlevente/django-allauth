@@ -118,14 +118,24 @@ class OAuth2CallbackView(OAuth2View):
                 error = AuthError.CANCELLED
             else:
                 error = AuthError.UNKNOWN
-            return render_authentication_error(
-                request,
-                self.adapter.provider_id,
-                error=error)
+            if not'access_token' in request.GET:
+                return render_authentication_error(
+                    request,
+                    self.adapter.provider_id,
+                    error=error)
         app = self.adapter.get_provider().get_app(self.request)
         client = self.get_client(request, app)
         try:
-            access_token = client.get_access_token(request.GET['code'])
+            if 'code' in request.GET:
+                access_token = client.get_access_token(request.GET['code'])
+            else:
+                access_token = {
+                    'access_token': request.GET['access_token'],
+                    'expires_in': request.GET['expires_in'],
+                    'token_type': request.GET['token_type']
+                }
+                if access_token['expires_in'] == 'never':
+                    access_token['expires_in'] = 99999999
             token = self.adapter.parse_token(access_token)
             token.app = app
             login = self.adapter.complete_login(request,
@@ -133,6 +143,7 @@ class OAuth2CallbackView(OAuth2View):
                                                 token,
                                                 response=access_token)
             login.token = token
+           # return complete_social_login(request, login)
             if self.adapter.supports_state:
                 login.state = SocialLogin \
                     .verify_and_unstash_state(
