@@ -23,7 +23,7 @@ class FoursquareOAuth2Adapter(OAuth2Adapter):
         # https://developer.foursquare.com/overview/versioning
         resp = requests.get(
             self.profile_url,
-            params={'oauth_token': token.token, 'v': '20140116'})
+            params={'oauth_token': token.token, 'v': '20180401'})
         extra_data = resp.json()['response']['user']
         return self.get_provider().sociallogin_from_response(request,
                                                              extra_data)
